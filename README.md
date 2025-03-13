@@ -17,6 +17,7 @@ Now run `downloader.py`, you can select a number to pick a folder or type "all" 
 When everything is done you'll have a folder tree like this, you can also add your own folders if you want to
 ```
 root
+├── cookies.txt
 ├── downloader.py
 ├── gdl.exe
 ├── gdlconf.conf
