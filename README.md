@@ -13,6 +13,7 @@ To use, copy the !_BASE folder and rename it to the artists username, then open 
 ]
 ```
 Open `gdlconf.conf` and change whatever you need to, like the filenames and logins. Download [cookies.txt](https://github.com/hrdl-github/cookies-txt) to export your cookies, some websites require you to do this. Export the cookies by site, and add them to a `cookies.txt` file. You could also have multiple `cookies.txt` files if you really want to.
+
 Now run `downloader.py`, you can select a number to pick a folder or type "all" to go through them all one by one. If you want to skip a download for any reason, such as Furaffinity having a dogshit API that makes Gallery-DL go through every fucking post one by one, press `S` and then `Enter`.
 
 When everything is done you'll have a folder tree like this, you can also add your own folders for stuff not downloaded using Gallery-DL.
