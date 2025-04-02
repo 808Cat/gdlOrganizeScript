@@ -3,19 +3,42 @@ import os
 import requests
 import json
 from pathlib import Path
+import platform
+from threading import Thread
+import time
+
+def os_check():
+    os_name = platform.system()
+
+    if os_name == "Windows":
+        return "W"
+    elif os_name == "Linux":
+        return "L"
+    else:
+        print(f"Please use Windows or Linux")
+        exit()
 
 def download_gdl():
-    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gdl.exe')
-    url = 'https://github.com/mikf/gallery-dl/releases/latest/download/gallery-dl.exe'
-    
+    os_type = os_check()
+    if os_type == "W":
+        file_name = 'gdl.exe'
+        url = 'https://github.com/mikf/gallery-dl/releases/latest/download/gallery-dl.exe'
+    elif os_type == "L":
+        file_name = 'gdl.bin'
+        url = 'https://github.com/mikf/gallery-dl/releases/latest/download/gallery-dl.bin'
+
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
+
     if not os.path.exists(file_path):
-        print(f"Downloading gdl.exe...")
+        print(f"Downloading {file_name}...")
         response = requests.get(url)
-        
+
         if response.status_code == 200:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
-            print(f"gdl.exe saved to {file_path}")
+            print(f"{file_name} saved to {file_path}")
+            if os_type == "L":
+                os.chmod(file_path, 0o755)  # Make the binary executable on Linux
         else:
             print(f"Download failed, download Gallery-DL yourself. Status code: {response.status_code}")
             return None
@@ -23,16 +46,16 @@ def download_gdl():
 
 def select_folder():
     folders = [f for f in os.listdir() if os.path.isdir(f) and not f.startswith('.') and f != "!_BASE"]
-    
+
     if not folders:
         print("No folders found")
         return None
-        
+
     print("\nAvailable folders:")
     for i, folder in enumerate(folders, 1):
         print(f"{i}. {folder}")
     print("\nType the folder number or type 'all' for every folder. Press CTRL+C to exit")
-    
+
     while True:
         choice = input("\nEnter folder number or 'all': ").strip()
         if choice.lower() == "all":
@@ -53,7 +76,7 @@ def load_sites_config(folder):
     if not os.path.exists(config_path):
         print(f"No links.json found in {folder}")
         return None
-        
+
     try:
         with open(config_path, 'r') as f:
             content = f.read()
@@ -90,7 +113,7 @@ def load_sites_config(folder):
                     cleaned.append(c)
                     i += 1
             return ''.join(cleaned)
-        
+
         cleaned_content = remove_comments(content)
         return json.loads(cleaned_content)
     except json.JSONDecodeError as e:
@@ -119,28 +142,54 @@ def download_sites(folder, gdl_path):
         ]
 
         print(f"\nDownloading: {site['url']} to {full_dir}")
-        
+
         try:
-            subprocess.run(command, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Download failed: {e}")
+            proc = subprocess.Popen(command)
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error starting download: {e}")
+            continue
+
+        skip_requested = [False]  # Using list to allow modification in nested scope
+
+        def wait_for_skip():
+            try:
+                user_input = input().strip().upper()
+                if user_input == 'S':
+                    skip_requested[0] = True
+            except:
+                pass
+
+        skip_thread = Thread(target=wait_for_skip)
+        skip_thread.daemon = True
+        skip_thread.start()
+
+        while proc.poll() is None:
+            if skip_requested[0]:
+                proc.terminate()
+                break
+            time.sleep(0.1)
+
+        proc.wait()  # Ensure process termination is handled
+
+        if skip_requested[0]:
+            print(f"Skipped {site['url']}")
+        elif proc.returncode != 0:
+            print(f"Download failed for {site['url']} with exit code {proc.returncode}")
 
 if __name__ == "__main__":
     gdl_path = download_gdl()
     if not gdl_path:
         exit()
-    
+
     selected_folder = select_folder()
     if not selected_folder:
         exit()
-    
+
     if isinstance(selected_folder, list):
         for folder in selected_folder:
             print(f"\nProcessing folder: {folder}")
             download_sites(folder, gdl_path)
     else:
         download_sites(selected_folder, gdl_path)
-    
+
     print("\nAll operations completed")
