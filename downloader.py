@@ -4,7 +4,8 @@ import requests
 import json
 from pathlib import Path
 import platform
-from threading import Thread
+import select
+import sys
 import time
 
 def os_check():
@@ -149,29 +150,22 @@ def download_sites(folder, gdl_path):
             print(f"Error starting download: {e}")
             continue
 
-        skip_requested = [False]  # Using list to allow modification in nested scope
-
-        def wait_for_skip():
-            try:
-                user_input = input().strip().upper()
-                if user_input == 'S':
-                    skip_requested[0] = True
-            except:
-                pass
-
-        skip_thread = Thread(target=wait_for_skip)
-        skip_thread.daemon = True
-        skip_thread.start()
+        skip_requested = False
 
         while proc.poll() is None:
-            if skip_requested[0]:
-                proc.terminate()
-                break
+            # Check for user input to skip
+            rlist, _, _ = select.select([sys.stdin], [], [], 0)
+            if rlist:
+                user_input = sys.stdin.readline().strip().upper()
+                if user_input == 'S':
+                    skip_requested = True
+                    proc.terminate()
+                    break
             time.sleep(0.1)
 
         proc.wait()  # Ensure process termination is handled
 
-        if skip_requested[0]:
+        if skip_requested:
             print(f"Skipped {site['url']}")
         elif proc.returncode != 0:
             print(f"Download failed for {site['url']} with exit code {proc.returncode}")
