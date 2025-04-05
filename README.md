@@ -1,7 +1,9 @@
 # Gallery-DL organizer script
 This is a script I use to download artists galleries from multiple sources without putting too much thought into it.
+
 It should support Windows and Linux, but I don't use Windows anymore so I won't test it.
-I wrote all this with AI.. I don't want to learn how to program just to download some furry porn, okay?
+
+I wrote all this with AI.. I don't want to learn how to program just to download some furry porn, okay? It works, and it hasn't exploded yet, so it's fine to me.
 
 ---
 
